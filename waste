@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Public Transport Survey</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-list">
+            <li class="nav-item">
+                <a href="index.html" class="nav-link"><i class="fas fa-home"></i> Home</a>
+            </li>
+            <li class="nav-item dropdown">
+                <a href="#" class="nav-link">Services <i class="fas fa-caret-down"></i></a>
+                <ul class="dropdown-menu">
+                    <li><a href="services.html">Real-Time Bus Tracking</a></li>
+                    <li><a href="complaints.html">Complaint Box</a></li>
+                </ul>
+            </li>
+            <li class="nav-item">
+                <a href="results.html" class="nav-link">Survey Results</a>
+            </li>
+            <li class="nav-item">
+                <a href="contact.html" class="nav-link">Contact Us</a>
+            </li>
+            <li class="nav-item">
+                <a href="https://forms.gle/ebzX61TJQVnWzyUYA" target="_blank" class="nav-link"><i class="fas fa-comment-dots"></i> Feedback</a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="content">
+        <h1>Welcome to the Public Transport Survey</h1>
+        <p>This website provides information and tracks your real-time bus information, complaint submission, and survey results.</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

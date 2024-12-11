@@ -1,0 +1,74 @@
+document.addEventListener("DOMContentLoaded", function () {
+  // Initialize the map
+  const map = L.map("map").setView([12.924257583928451, 77.50020973592544], 13);
+
+  // Add tile layer to the map
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+  }).addTo(map);
+
+  // Define route points
+  const routes = [
+    {
+      name: "Route 1",
+      color: "red",
+      points: [
+        [12.917303, 77.498037], // Jayanagar 4th Block
+        [12.918205, 77.510584], // Lalbagh Botanical Garden
+        [12.924258, 77.500210], // Near Your Location
+        [12.927928, 77.518515], // Forum Mall
+        [12.936174, 77.554785], // Koramangala
+      ],
+    },
+    {
+      name: "Route 2",
+      color: "blue",
+      points: [
+        [12.924258, 77.500210], // Near Your Location
+        [12.910113, 77.506556], // BTM Layout
+        [12.927923, 77.515988], // Madiwala
+        [12.933219, 77.578412], // HAL Old Airport Road
+      ],
+    },
+    {
+      name: "Route 3",
+      color: "green",
+      points: [
+        [12.924258, 77.500210], // Near Your Location
+        [12.918181, 77.479121], // Banashankari Temple
+        [12.926345, 77.470567], // Uttarahalli
+        [12.936853, 77.459898], // Kengeri
+      ],
+    },
+    {
+      name: "Route 4",
+      color: "purple",
+      points: [
+        [12.924258, 77.500210], // Near Your Location
+        [12.930722, 77.518494], // Sony World Junction
+        [12.949744, 77.532401], // HSR Layout
+        [12.961722, 77.589789], // Marathahalli
+      ],
+    },
+    {
+      name: "Route 5",
+      color: "orange",
+      points: [
+        [12.924258, 77.500210], // Near Your Location
+        [12.912872, 77.492967], // JP Nagar
+        [12.925857, 77.482403], // RVCE
+        [12.935312, 77.458839], // Global Village Tech Park
+      ],
+    },
+  ];
+
+  // Add routes to the map
+  routes.forEach((route) => {
+    L.polyline(route.points, { color: route.color, weight: 5, opacity: 0.7 }).addTo(map);
+
+    // Add markers for each point
+    route.points.forEach((point, index) => {
+      L.marker(point).addTo(map).bindPopup(`<b>${route.name}</b><br>Stop ${index + 1}`);
+    });
+  });
+});
