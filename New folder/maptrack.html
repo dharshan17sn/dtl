@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Real-Time Bus Tracking</title>
+  <!-- Google Maps API -->
+  <script src="https://maps.gomaps.pro/maps/api/js?key=AlzaSyikppRzkHBbQBYRn9JqH0Hk7mXnHEs-9ou&libraries=geometry,places&callback=initMap" 
+    async defer>
+  </script>
+  
+  <script>
+    let map;
+    let busMarker;
+    let busRouteData = {
+      "route_no": 1,
+      "distance": "19.6 KM",
+      "origin": "Jayanagara 9th Block",
+      "destination": "Yeshwanathapura new railway station",
+      "map_json_content": [
+        {"busstop": "Jayanagara 9th Block", "latlons": ["12.9197565816171", "77.5923588994416"]},
+        {"busstop": "Jayanagara T Block", "latlons": ["12.9226893214618", "77.5933845451659"]},
+        {"busstop": "Jayanagara 18th Main", "latlons": ["12.9231859777075", "77.5887716805949"]},
+        {"busstop": "Church", "latlons": ["12.9279596029171", "77.5876041867249"]},
+        {"busstop": "Jayanagara 4th Block", "latlons": ["12.9284826437007", "77.58420959115"]},
+        {"busstop": "Jayanagara 3rd Block", "latlons": ["12.9317783285", "77.5839063618"]},
+        {"busstop": "Madavan Park", "latlons": ["12.9361068271", "77.5839236286"]},
+        {"busstop": "Southend Circle", "latlons": ["12.9366643075", "77.5766457058"]},
+        {"busstop": "Nagasandra Circle", "latlons": ["12.9367205700067", "77.5721701369447"]},
+        {"busstop": "Netakallappa Circle", "latlons": ["12.9395624343", "77.5721522514"]},
+        {"busstop": "Basavanagudi Police Station", "latlons": ["12.94189", "77.57358"]},
+        {"busstop": "Gandhi Bazaar", "latlons": ["12.9457424115", "77.5707005896"]},
+        {"busstop": "Ramakrishna Ashrama", "latlons": ["12.94914747783", "77.567561017579"]},
+        {"busstop": "Bangalore High School", "latlons": ["12.9518947285", "77.5674634986"]},
+        {"busstop": "Chamarajapet", "latlons": ["12.957194522", "77.5682954863"]},
+        {"busstop": "Makkalakoota", "latlons": ["12.95850855", "77.57402561"]},
+        {"busstop": "Krishnarajendra Market", "latlons": ["12.96161187", "77.57527904"]},
+        {"busstop": "Veterinary Hospital", "latlons": ["12.96366", "77.56843"]},
+        {"busstop": "Goodshed Road Gate", "latlons": ["12.9681187418378", "77.5680068206731"]},
+        {"busstop": "Majestic", "latlons": ["12.97736", "77.57074"]},
+        {"busstop": "Ananda Rao Circle", "latlons": ["12.9817447954723", "77.574481312945"]},
+        {"busstop": "Central", "latlons": ["12.9899747663903", "77.572098665973"]},
+        {"busstop": "Malleshwaram Circle", "latlons": ["12.9978901319732", "77.5713099939793"]},
+        {"busstop": "Malleshwaram 8th Cross", "latlons": ["12.99966", "77.57128"]},
+        {"busstop": "Malleshwaram 15th Cross", "latlons": ["13.005030714", "77.5711547211"]},
+        {"busstop": "Malleshwaram 18th Cross", "latlons": ["13.0090816878", "77.5710476004"]},
+        {"busstop": "Tata Institute", "latlons": ["13.01565694", "77.56289701"]},
+        {"busstop": "Yeshawanthapura TTMC", "latlons": ["13.017420746122461", "77.55707759428026"]},
+        {"busstop": "Govardhan Talkies", "latlons": ["13.01856", "77.55320"]},
+        {"busstop": "Yeshwanathapura new railway station", "latlons": ["13.02311", "77.55029"]}      
+      ]
+    };
+
+    // Initialize the Google Map
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        zoom: 14,
+        center: { lat: 12.9197, lng: 77.5924 }, // Jayanagara 9th Block (starting point)
+      });
+      
+      // Create the array of coordinates for the polyline
+      const routeCoordinates = busRouteData.map_json_content.map(stop => {
+        return { lat: parseFloat(stop.latlons[0]), lng: parseFloat(stop.latlons[1]) };
+      });
+
+      // Add the polyline to the map
+      const busRoutePolyline = new google.maps.Polyline({
+        path: routeCoordinates,
+        geodesic: true,
+        strokeColor: "#FF0000", // Color of the polyline (red)
+        strokeOpacity: 1.0,
+        strokeWeight: 2,
+      });
+      busRoutePolyline.setMap(map);
+
+      // Plot the bus stops
+      busRouteData.map_json_content.forEach(stop => {
+        const lat = parseFloat(stop.latlons[0]);
+        const lon = parseFloat(stop.latlons[1]);
+        new google.maps.Marker({
+          position: { lat, lng: lon },
+          map: map,
+          title: stop.busstop,
+        });
+      });
+
+      // Start time (simulate the time bus leaves the origin)
+      const startTime = "2024-12-11T07:35:00"; // Example departure time
+      setInterval(() => {
+        const currentTime = new Date().toISOString();
+        const busPosition = simulateBusMovement(busRouteData.map_json_content, startTime, currentTime);
+        updateBusMarker(busPosition);
+      }, 10000); // Update every 10 seconds
+    }
+
+    // Update the bus marker position on the map
+    function updateBusMarker(busPosition) {
+      if (busMarker) {
+        busMarker.setPosition(busPosition);
+      } else {
+        busMarker = new google.maps.Marker({
+          position: busPosition,
+          map: map,
+          title: "Bus Marker"
+        });
+      }
+    }
+
+    // Calculate the distance between two lat-lon points (Haversine formula)
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371; // Radius of the Earth in kilometers
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c; // Distance in kilometers
+    }
+
+    // Estimate time based on bus speed
+    function estimateTravelTime(distance, speed) {
+      return distance / speed * 60; // Travel time in minutes
+    }
+
+    // Get route details (total distance and segment distances)
+    function getRouteDetails(busRouteData) {
+      let totalDistance = 0;
+      let distances = [];
+      
+      for (let i = 0; i < busRouteData.map_json_content.length - 1; i++) {
+        const stop1 = busRouteData.map_json_content[i];
+        const stop2 = busRouteData.map_json_content[i + 1];
+        
+        const lat1 = parseFloat(stop1.latlons[0]);
+        const lon1 = parseFloat(stop1.latlons[1]);
+        const lat2 = parseFloat(stop2.latlons[0]);
+        const lon2 = parseFloat(stop2.latlons[1]);
+        
+        const distance = haversine(lat1, lon1, lat2, lon2);
+        distances.push(distance);
+        totalDistance += distance;
+      }
+      
+      return { totalDistance, distances };
+    }
+
+    // Calculate bus's position along the route
+    function simulateBusMovement(directions, startTime, currentTime, speed = 40) {
+      const { totalDistance, distances } = getRouteDetails(directions);
+      const elapsedMinutes = (new Date(currentTime) - new Date(startTime)) / (1000 * 60); // Time passed in minutes
+      let traveledDistance = 0;
+      for (let i = 0; i < distances.length; i++) {
+        const timeToTravel = estimateTravelTime(distances[i], speed);
+        if (elapsedMinutes >= traveledDistance && elapsedMinutes < traveledDistance + timeToTravel) {
+          const progress = (elapsedMinutes - traveledDistance) / timeToTravel;
+          const lat1 = parseFloat(directions[i].latlons[0]);
+          const lon1 = parseFloat(directions[i].latlons[1]);
+          const lat2 = parseFloat(directions[i+1].latlons[0]);
+          const lon2 = parseFloat(directions[i+1].latlons[1]);
+          const lat = lat1 + (lat2 - lat1) * progress;
+          const lon = lon1 + (lon2 - lon1) * progress;
+          return { lat, lon }; // Return the bus's current position
+        }
+        traveledDistance += timeToTravel;
+      }
+      return { lat: directions[directions.length - 1].latlons[0], lon: directions[directions.length - 1].latlons[1] };
+    }
+  </script>
+</head>
+<body onload="initMap()">
+  <div id="map" style="height: 600px; width: 100%;"></div>
+</body>
+</html>

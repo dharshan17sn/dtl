@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps with Directions, Source and Destination, Live Location, and Location Search</title>
+    <link rel="stylesheet" href="styles.css">
+    
+</head>
+<body>
+    <div class="input-container">
+        <h2>Enter Source and Destination</h2>
+
+        <!-- Source and Destination Inputs -->
+        <input id="source-input" type="text" placeholder="Search for Source" />
+        <input id="destination-input" type="text" placeholder="Search for Destination" />
+        <input id="search-location" type="text" placeholder="Search for any location" />
+    </div>
+
+    <div class="map-container">
+        <div id="map"></div>
+    </div>
+
+    <!-- Load the Google Maps JavaScript API with the Places library -->
+    <script async defer
+        src="https://maps.gomaps.pro/maps/api/js?key=AlzaSyikppRzkHBbQBYRn9JqH0Hk7mXnHEs-9ou&libraries=geometry,places,directions&callback=initMap">
+    </script>
+
+    <script>
+        let map;
+        let sourceAutocomplete;
+        let destinationAutocomplete;
+        let searchAutocomplete;
+        let directionsService;
+        let directionsRenderer;
+        let userLocationMarker;
+        let sourceMarker;
+        let destinationMarker;
+        let userLocationCircle;
+        let distanceDisplay;
+        let searchMarker;
+
+        function initMap() {
+            // Create the map centered on a default location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    const userLocation = new google.maps.LatLng(userLat, userLng);
+
+                    map = new google.maps.Map(document.getElementById('map'), {
+                        center: userLocation,
+                        zoom: 14,
+                    });
+
+                    // Add a marker for the user's location
+                    userLocationMarker = new google.maps.Marker({
+                        position: userLocation,
+                        map: map,
+                        title: 'Your Location',
+                    });
+
+                    // Add a blue circle around the user's location
+                    userLocationCircle = new google.maps.Circle({
+                        map: map,
+                        center: userLocation,
+                        radius: 300, // Reduced radius to 300 meters
+                        fillColor: '#0000FF', // Blue fill color
+                        fillOpacity: 0.4,
+                        strokeColor: '#0000FF', // Blue border
+                        strokeOpacity: 0.6,
+                        strokeWeight: 2,
+                    });
+
+                    // Initialize the autocomplete functionality for the inputs
+                    directionsService = new google.maps.DirectionsService();
+                    directionsRenderer = new google.maps.DirectionsRenderer();
+                    directionsRenderer.setMap(map);
+
+                    // Setup source and destination input fields with autocomplete
+                    const sourceInput = document.getElementById('source-input');
+                    const destinationInput = document.getElementById('destination-input');
+                    const searchLocationInput = document.getElementById('search-location');
+                    
+                    // Source location autocomplete
+                    sourceAutocomplete = new google.maps.places.Autocomplete(sourceInput);
+                    sourceAutocomplete.bindTo('bounds', map);
+
+                    // Destination location autocomplete
+                    destinationAutocomplete = new google.maps.places.Autocomplete(destinationInput);
+                    destinationAutocomplete.bindTo('bounds', map);
+
+                    // Location search autocomplete
+                    searchAutocomplete = new google.maps.places.Autocomplete(searchLocationInput);
+                    searchAutocomplete.bindTo('bounds', map);
+
+                    // Event listener for source selection
+                    sourceAutocomplete.addListener('place_changed', () => {
+                        const place = sourceAutocomplete.getPlace();
+                        if (!place.geometry) {
+                            console.log("No details available for the input: '" + place.name + "'");
+                            return;
+                        }
+
+                        // Place the source marker on the map
+                        if (sourceMarker) {
+                            sourceMarker.setMap(null); // Remove old marker
+                        }
+                        sourceMarker = new google.maps.Marker({
+                            position: place.geometry.location,
+                            map: map,
+                            title: 'Source'
+                        });
+
+                        // Recalculate the route after selecting the source
+                        if (destinationMarker) {
+                            calculateRoute(sourceMarker.getPosition(), destinationMarker.getPosition());
+                        }
+                    });
+
+                    // Event listener for destination selection
+                    destinationAutocomplete.addListener('place_changed', () => {
+                        const place = destinationAutocomplete.getPlace();
+                        if (!place.geometry) {
+                            console.log("No details available for the input: '" + place.name + "'");
+                            return;
+                        }
+
+                        // Place the destination marker on the map
+                        if (destinationMarker) {
+                            destinationMarker.setMap(null); // Remove old marker
+                        }
+                        destinationMarker = new google.maps.Marker({
+                            position: place.geometry.location,
+                            map: map,
+                            title: 'Destination'
+                        });
+
+                        // Recalculate the route after selecting the destination
+                        if (sourceMarker) {
+                            calculateRoute(sourceMarker.getPosition(), destinationMarker.getPosition());
+                        }
+                    });
+
+                    // Event listener for searching a location
+                    searchAutocomplete.addListener('place_changed', () => {
+                        const place = searchAutocomplete.getPlace();
+                        if (!place.geometry) {
+                            console.log("No details available for the input: '" + place.name + "'");
+                            return;
+                        }
+
+                        // Place the search marker on the map
+                        if (searchMarker) {
+                            searchMarker.setMap(null); // Remove old marker
+                        }
+                        searchMarker = new google.maps.Marker({
+                            position: place.geometry.location,
+                            map: map,
+                            title: 'Searched Location'
+                        });
+
+                        // Optionally, center the map on the searched location
+                        map.setCenter(place.geometry.location);
+                        map.setZoom(14); // Zoom to the searched location
+                    });
+
+                }, () => {
+                    alert("Error: The Geolocation service failed.");
+                });
+            } else {
+                alert("Error: Your browser doesn't support geolocation.");
+            }
+        }
+
+        // Function to calculate and display directions, and distance when clicking on the line
+        function calculateRoute(source, destination) {
+            const request = {
+                origin: source, // Source location
+                destination: destination, // Destination location
+                travelMode: google.maps.TravelMode.DRIVING
+            };
+
+            directionsService.route(request, (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(result);
+
+                    const route = result.routes[0].legs[0];
+                    const distance = route.distance.text; // Get the distance in text format
+
+                    // When user clicks the line, display the distance
+                    google.maps.event.addListener(directionsRenderer, 'directions_changed', () => {
+                        // Get the path of the route
+                        const path = result.routes[0].overview_path;
+
+                        // Get midpoint of the path to display distance
+                        const midPoint = google.maps.geometry.spherical.interpolate(path[0], path[path.length - 1], 0.5);
+
+                        if (distanceDisplay) {
+                            distanceDisplay.setMap(null); // Remove the old distance display
+                        }
+
+                        // Display the distance at the midpoint of the route
+                        distanceDisplay = new google.maps.InfoWindow({
+                            content: `Distance: ${distance}`,
+                            position: midPoint
+                        });
+
+                        distanceDisplay.open(map);
+                    });
+                } else {
+                    alert("Could not get directions: " + status);
+                }
+            });
+        }
+    </script>
+</body>
+</html>
